@@ -184,7 +184,6 @@
 
 1. PReNet：[https://arxiv.org/abs/1901.09221](https://arxiv.org/abs/1901.09221)
 2. SPANet：[https://arxiv.org/abs/1904.01538](https://arxiv.org/abs/1904.01538)
-3. MPRNet：[https://arxiv.org/abs/2011.04566](https://arxiv.org/abs/2011.04566)（PReNet 进阶）
 
 **tips**：
 
