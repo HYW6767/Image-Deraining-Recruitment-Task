@@ -11,8 +11,8 @@ from dataset import DerainDataset
 from utils import calculate_metrics, save_checkpoint, load_checkpoint, save_some_examples
 from models.baseline_net import BaselineNet
 from models.unet import UNet
-from models.derainnet import DerainNet
-from models.mymodel import Mymodel
+from models.DerainNet import DerainNet
+from models.Mymodel import Mymodel
 from losses.perceptual_loss import PerceptualLoss
 
 
