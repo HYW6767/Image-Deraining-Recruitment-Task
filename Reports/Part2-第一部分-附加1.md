@@ -121,7 +121,13 @@ LSTM 在第 t 阶段同时接收 x^（t−0.5）与上一阶段的循环状态 s
 
       4. 训练并测试模型，保存模型权重，截图保存测试指标
 
-      还没训好呢，晚上睡前我再开始训
+      ```powershell
+      python main.py --data_dir "data/Rain200L" --model mymodel --mode test --checkpoint "checkpoints/best_mymodel.pth.tar"
+      ```
+      
+      测试得到的结果为如下：
+
+      ![](https://picgocloud.com/m/24750489-6949-4592-9c02-7a9afb82d650.png)
 
    2. 为什么使用文中同样的架构或模块来优化模型反而不会提高，甚至降低点数？
 
