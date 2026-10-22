@@ -42,7 +42,7 @@ def load_img(Path):
     img = Image.open(Path).convert("RGB")
     
     transform= transforms.Compose([
-                transforms.Resize((128,128)),
+                
                 transforms.ToTensor()])
     img=transform(img)
     img=img.unsqueeze(0).to(device)
@@ -56,6 +56,6 @@ with torch.no_grad():
     img=model(img_in)
     final_img = img.squeeze(0).clamp(0, 1).cpu().detach()
     final_img = transforms.ToPILImage()(final_img)
-    final_img.save(f"output_{args.model}_resize128.jpg")
+    final_img.save(f"output_{args.model}.jpg")
 
 
