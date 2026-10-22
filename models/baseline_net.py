@@ -41,10 +41,10 @@ class BaselineNet(nn.Module):
         self.out_conv=nn.Conv2d(64,3,1)
 
     def forward(self, x):
-        rain=self.block1(x)
-        rain=self.block2(rain)
-        rain=self.block3(rain)
-        rain=self.block4(rain)
-        rain=self.out_conv(rain)     
+        x=self.block1(x)
+        x=self.block2(x)
+        x=self.block3(x)
+        x=self.block4(x)
+        x=self.out_conv(x)     
         
-        return x-rain
+        return x

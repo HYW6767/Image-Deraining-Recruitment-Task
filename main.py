@@ -15,6 +15,7 @@ from models.DerainNet import DerainNet
 from models.Mymodel import Mymodel
 from losses.perceptual_loss import PerceptualLoss
 from losses.easy_contrastive_loss import Contractiveloss
+from losses.not_easy_contrastive_loss import RealContractiveloss
 
 def get_args():
     parser = argparse.ArgumentParser(description="Deraining Model Training")
@@ -29,6 +30,7 @@ def get_args():
 
     parser.add_argument("--use_perceptual_loss", action="store_true", help="Use perceptual loss")
     parser.add_argument("--use_contrastive_loss", action="store_true", help="Use contrastive loss")
+    parser.add_argument("--use_noteasy_contrastive_loss", action="store_true", help="Use noteasycontrastive loss")
     parser.add_argument("--lambda_pixel", type=float, default=1.0, help="Weight for pixel loss")
     parser.add_argument("--lambda_perceptual", type=float, default=0.1, help="Weight for perceptual loss")
     parser.add_argument("--lambda_contrastive", type=float, default=0.1, help="Weight for contrastive loss")
@@ -36,7 +38,7 @@ def get_args():
     return parser.parse_args()
 
 
-def train_one_epoch(loader, model, optimizer, pixel_loss_fn, perceptual_loss_fn,contrastive_loss_fn, args, device):
+def train_one_epoch(loader, model, optimizer, pixel_loss_fn, perceptual_loss_fn,contrastive_loss_fn,real_contrastive_loss_fn, args, device):
     loop = tqdm(loader, leave=True)
     model.train()
 
@@ -46,6 +48,10 @@ def train_one_epoch(loader, model, optimizer, pixel_loss_fn, perceptual_loss_fn,
         pixel_loss = args.lambda_pixel * pixel_loss_fn(derained, clean)
         total_loss = pixel_loss
         info = {"pixel_loss": pixel_loss.item()}
+        if args.use_noteasy_contrastive_loss:
+            r_loss = args.lambda_contrastive * real_contrastive_loss_fn(rainy,derained, clean)
+            total_loss += r_loss
+            info["real_perceptual_loss"]=r_loss.item()
         if args.use_perceptual_loss:
             p_loss = args.lambda_perceptual * perceptual_loss_fn(derained, clean)
             total_loss += p_loss
@@ -103,6 +109,7 @@ def main():
     pixel_loss_fn = nn.L1Loss()
     contrastive_loss_fn=Contractiveloss().to(device) if args.use_contrastive_loss else None
     perceptual_loss_fn = PerceptualLoss().to(device) if args.use_perceptual_loss else None
+    real_perceptual_loss_fn = RealContractiveloss().to(device) if args.use_noteasy_contrastive_loss else None
     optimizer = optim.Adam(model.parameters(), lr=args.lr)
 
     if args.mode == "train":
@@ -114,7 +121,7 @@ def main():
         best_psnr = 0.0
         for epoch in range(args.epochs):
             print(f"\n--- Epoch {epoch + 1}/{args.epochs} ---")
-            train_one_epoch(train_loader, model, optimizer, pixel_loss_fn, perceptual_loss_fn,contrastive_loss_fn, args, device)
+            train_one_epoch(train_loader, model, optimizer, pixel_loss_fn, perceptual_loss_fn,contrastive_loss_fn,real_perceptual_loss_fn, args, device)
 
             current_psnr = evaluate(test_loader, model, device, lpips_fn)
 
@@ -127,7 +134,9 @@ def main():
                     model_name = f"{args.model}_perceptual.pth.tar"
                 elif args.use_contrastive_loss:
                     model_name=f"{args.model}_contrastive.pth.tar"
-                
+                elif args.use_noteasy_contrastive_loss:
+                    model_name=f"{args.model}_real_contrastive.pth.tar"
+
                 else:
                     model_name=f"{args.model}.pth.tar"
                 save_checkpoint(checkpoint_data, filename=f"best_{model_name}")
