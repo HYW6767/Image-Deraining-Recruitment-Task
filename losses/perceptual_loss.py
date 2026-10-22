@@ -15,7 +15,7 @@ STD  = [0.229, 0.224, 0.225]
 class PerceptualLoss(nn.Module):
     def __init__(self):
         super(PerceptualLoss, self).__init__()
-        vgg=vgg19(pretrained=True).features[:35]
+        vgg=vgg19(weights=VGG19_Weights.IMAGENET1K_V1).features[:35]
 
 
         for p in vgg.parameters():

@@ -14,7 +14,7 @@ from models.unet import UNet
 from models.DerainNet import DerainNet
 from models.Mymodel import Mymodel
 from losses.perceptual_loss import PerceptualLoss
-
+from losses.easy_contrastive_loss import Contractiveloss
 
 def get_args():
     parser = argparse.ArgumentParser(description="Deraining Model Training")
@@ -28,13 +28,15 @@ def get_args():
     parser.add_argument("--lr", type=float, default=1e-4, help="Learning rate")
 
     parser.add_argument("--use_perceptual_loss", action="store_true", help="Use perceptual loss")
+    parser.add_argument("--use_contrastive_loss", action="store_true", help="Use contrastive loss")
     parser.add_argument("--lambda_pixel", type=float, default=1.0, help="Weight for pixel loss")
     parser.add_argument("--lambda_perceptual", type=float, default=0.1, help="Weight for perceptual loss")
+    parser.add_argument("--lambda_contrastive", type=float, default=0.1, help="Weight for contrastive loss")
 
     return parser.parse_args()
 
 
-def train_one_epoch(loader, model, optimizer, pixel_loss_fn, perceptual_loss_fn, args, device):
+def train_one_epoch(loader, model, optimizer, pixel_loss_fn, perceptual_loss_fn,contrastive_loss_fn, args, device):
     loop = tqdm(loader, leave=True)
     model.train()
 
@@ -43,12 +45,17 @@ def train_one_epoch(loader, model, optimizer, pixel_loss_fn, perceptual_loss_fn,
         derained = model(rainy)
         pixel_loss = args.lambda_pixel * pixel_loss_fn(derained, clean)
         total_loss = pixel_loss
+        info = {"pixel_loss": pixel_loss.item()}
         if args.use_perceptual_loss:
             p_loss = args.lambda_perceptual * perceptual_loss_fn(derained, clean)
             total_loss += p_loss
-            loop.set_postfix(pixel_loss=pixel_loss.item(), perceptual_loss=p_loss.item())
-        else:
-            loop.set_postfix(pixel_loss=pixel_loss.item())
+            info["perceptual_loss"]=p_loss.item()
+        if args.use_contrastive_loss:
+            c_loss=args.lambda_contrastive*contrastive_loss_fn(rainy,derained, clean)
+            total_loss+=c_loss
+            info["contrastive_loss"]=c_loss.item()
+        loop.set_postfix(**info)
+
         optimizer.zero_grad()
         total_loss.backward()
         optimizer.step()
@@ -94,6 +101,7 @@ def main():
     lpips_fn = lpips.LPIPS(net='alex').to(device)
 
     pixel_loss_fn = nn.L1Loss()
+    contrastive_loss_fn=Contractiveloss().to(device) if args.use_contrastive_loss else None
     perceptual_loss_fn = PerceptualLoss().to(device) if args.use_perceptual_loss else None
     optimizer = optim.Adam(model.parameters(), lr=args.lr)
 
@@ -106,14 +114,22 @@ def main():
         best_psnr = 0.0
         for epoch in range(args.epochs):
             print(f"\n--- Epoch {epoch + 1}/{args.epochs} ---")
-            train_one_epoch(train_loader, model, optimizer, pixel_loss_fn, perceptual_loss_fn, args, device)
+            train_one_epoch(train_loader, model, optimizer, pixel_loss_fn, perceptual_loss_fn,contrastive_loss_fn, args, device)
 
             current_psnr = evaluate(test_loader, model, device, lpips_fn)
 
             if current_psnr > best_psnr:
                 best_psnr = current_psnr
                 checkpoint_data = {"state_dict": model.state_dict(), "optimizer": optimizer.state_dict()}
-                model_name = f"{args.model}_perceptual.pth.tar" if args.use_perceptual_loss else f"{args.model}.pth.tar"
+                if args.use_perceptual_loss and args.use_contrastive_loss:
+                    model_name=f"{args.model}_perceptual_contrastive.pth.tar"
+                elif args.use_perceptual_loss:
+                    model_name = f"{args.model}_perceptual.pth.tar"
+                elif args.use_contrastive_loss:
+                    model_name=f"{args.model}_contrastive.pth.tar"
+                
+                else:
+                    model_name=f"{args.model}.pth.tar"
                 save_checkpoint(checkpoint_data, filename=f"best_{model_name}")
 
             save_some_examples(model, test_loader, epoch, folder="evaluation_images", device=device)
