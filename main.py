@@ -7,7 +7,7 @@ import argparse
 import os
 import lpips
 
-from dataset import DerainDataset
+from dataset import DerainDataset,DerainDataset_noresize
 from utils import calculate_metrics, save_checkpoint, load_checkpoint, save_some_examples
 from models.baseline_net import BaselineNet
 from models.unet import UNet
@@ -31,6 +31,7 @@ def get_args():
     parser.add_argument("--use_perceptual_loss", action="store_true", help="Use perceptual loss")
     parser.add_argument("--use_contrastive_loss", action="store_true", help="Use contrastive loss")
     parser.add_argument("--use_noteasy_contrastive_loss", action="store_true", help="Use noteasycontrastive loss")
+    parser.add_argument("--use_noresize", action="store_true", help="Use noresize")
     parser.add_argument("--lambda_pixel", type=float, default=1.0, help="Weight for pixel loss")
     parser.add_argument("--lambda_perceptual", type=float, default=0.1, help="Weight for perceptual loss")
     parser.add_argument("--lambda_contrastive", type=float, default=0.1, help="Weight for contrastive loss")
@@ -113,10 +114,16 @@ def main():
     optimizer = optim.Adam(model.parameters(), lr=args.lr)
 
     if args.mode == "train":
-        train_dataset = DerainDataset(root_dir=args.data_dir, is_train=True)
-        train_loader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True, num_workers=4)
-        test_dataset = DerainDataset(root_dir=args.data_dir, is_train=False)
-        test_loader = DataLoader(test_dataset, batch_size=args.batch_size, shuffle=False)
+        if args.use_noresize:
+            train_dataset = DerainDataset_noresize(root_dir=args.data_dir, is_train=True)
+            train_loader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True, num_workers=4)
+            test_dataset = DerainDataset_noresize(root_dir=args.data_dir, is_train=False)
+            test_loader = DataLoader(test_dataset, batch_size=args.batch_size, shuffle=False)
+        else:
+            train_dataset = DerainDataset(root_dir=args.data_dir, is_train=True)
+            train_loader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True, num_workers=4)
+            test_dataset = DerainDataset(root_dir=args.data_dir, is_train=False)
+            test_loader = DataLoader(test_dataset, batch_size=args.batch_size, shuffle=False)
 
         best_psnr = 0.0
         for epoch in range(args.epochs):
@@ -128,17 +135,30 @@ def main():
             if current_psnr > best_psnr:
                 best_psnr = current_psnr
                 checkpoint_data = {"state_dict": model.state_dict(), "optimizer": optimizer.state_dict()}
-                if args.use_perceptual_loss and args.use_contrastive_loss:
-                    model_name=f"{args.model}_perceptual_contrastive.pth.tar"
-                elif args.use_perceptual_loss:
-                    model_name = f"{args.model}_perceptual.pth.tar"
-                elif args.use_contrastive_loss:
-                    model_name=f"{args.model}_contrastive.pth.tar"
-                elif args.use_noteasy_contrastive_loss:
-                    model_name=f"{args.model}_real_contrastive.pth.tar"
-
+                if args.use_noresize:
+                    if args.use_perceptual_loss and args.use_contrastive_loss:
+                        model_name=f"{args.model}_perceptual_contrastive_noresize.pth.tar"
+                    elif args.use_perceptual_loss:
+                        model_name = f"{args.model}_perceptual_noresize.pth.tar"
+                    elif args.use_contrastive_loss:
+                        model_name=f"{args.model}_contrastive_noresize.pth.tar"
+                    elif args.use_noteasy_contrastive_loss:
+                        model_name=f"{args.model}_real_contrastive_noresize.pth.tar"
+    
+                    else:
+                        model_name=f"{args.model}_noresize.pth.tar"
                 else:
-                    model_name=f"{args.model}.pth.tar"
+                    if args.use_perceptual_loss and args.use_contrastive_loss:
+                        model_name=f"{args.model}_perceptual_contrastive.pth.tar"
+                    elif args.use_perceptual_loss:
+                        model_name = f"{args.model}_perceptual.pth.tar"
+                    elif args.use_contrastive_loss:
+                        model_name=f"{args.model}_contrastive.pth.tar"
+                    elif args.use_noteasy_contrastive_loss:
+                        model_name=f"{args.model}_real_contrastive.pth.tar"
+
+                    else:
+                        model_name=f"{args.model}.pth.tar"
                 save_checkpoint(checkpoint_data, filename=f"best_{model_name}")
 
             save_some_examples(model, test_loader, epoch, folder="evaluation_images", device=device)

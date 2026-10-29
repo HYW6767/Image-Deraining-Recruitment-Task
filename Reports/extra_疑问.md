@@ -13,3 +13,27 @@
 4. 如何判断效果差是“尺度不匹配”导致的，而不是模型容量不足或训练不充分？
 
 望得到学长解答（所有结果均存在项目文件夹里）
+
+在尝试多无 resize 的模型训练时，我修改了 dataset 的内容，后面让 ds 检查了一下代码，疑似发现了一个问题：  
+在 transform 里这两行随机变化对有雨图和无雨图是独立随机的，会导致有雨图和干净图对不上，我将其注释掉了
+
+```python
+transforms.RandomCrop(image_size),
+transforms.RandomHorizontalFlip(),
+```
+
+不对，在 noresize 的训练中图片尺寸不相同，无法训练，得修改 noresize 的代码
+
+我将 resize 改为裁剪了
+
+对 noresize 进行训练
+
+```powershell
+python main.py --data_dir "data\Rain200L" --model derainnet --mode train --epochs 50 --use_noresize
+```
+
+使用 `use_model.py` 尝试生成图片
+
+还是不太理想
+
+不过雨丝与原来比少很多，时间不太够了后面再来看看
