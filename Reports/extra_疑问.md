@@ -34,6 +34,6 @@ python main.py --data_dir "data\Rain200L" --model derainnet --mode train --epoch
 
 使用 `use_model.py` 尝试生成图片
 
-还是不太理想
+还是不太理想，不过可以发现雨丝没那么明显了
 
-不过雨丝与原来比少很多，时间不太够了后面再来看看
+先这样吧
