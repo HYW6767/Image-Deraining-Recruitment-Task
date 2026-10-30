@@ -80,7 +80,7 @@ class DerainDataset_noresize(Dataset):
         clean_image = Image.open(clean_path).convert('RGB')
 
         i, j, h, w = transforms.RandomCrop.get_params(
-            rainy_image, (256, 256))
+            rainy_image, (128,128))
         rainy_image = TF.crop(rainy_image, i, j, h, w)
         clean_image = TF.crop(clean_image, i, j, h, w)
 
