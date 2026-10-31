@@ -25,11 +25,12 @@ def get_args():
     parser.add_argument("--checkpoint", type=str, default=None, help="Path to checkpoint for testing")
 
     parser.add_argument("--epochs", type=int, default=20, help="Number of training epochs")
-    parser.add_argument("--batch_size", type=int, default=8, help="Batch size")
+    parser.add_argument("--batch_size", type=int, default=4, help="Batch size")
     parser.add_argument("--lr", type=float, default=1e-4, help="Learning rate")
 
     parser.add_argument("--use_perceptual_loss", action="store_true", help="Use perceptual loss")
     parser.add_argument("--use_contrastive_loss", action="store_true", help="Use contrastive loss")
+    parser.add_argument("--use_MSE_loss", action="store_true", help="Use MSE loss")
     parser.add_argument("--use_noteasy_contrastive_loss", action="store_true", help="Use noteasycontrastive loss")
     parser.add_argument("--use_noresize", action="store_true", help="Use noresize")
     parser.add_argument("--lambda_pixel", type=float, default=1.0, help="Weight for pixel loss")
@@ -38,6 +39,15 @@ def get_args():
 
     return parser.parse_args()
 
+
+def build_ckpt_tag(args):
+    tags = [args.model]
+    if args.use_noresize:                 tags.append("noresize")
+    if args.use_MSE_loss:                 tags.append("mse")
+    if args.use_perceptual_loss:          tags.append("perceptual")
+    if args.use_contrastive_loss:         tags.append("contrastive")
+    if args.use_noteasy_contrastive_loss: tags.append("noteasy")
+    return "_".join(tags)
 
 def train_one_epoch(loader, model, optimizer, pixel_loss_fn, perceptual_loss_fn,contrastive_loss_fn,real_contrastive_loss_fn, args, device):
     loop = tqdm(loader, leave=True)
@@ -106,8 +116,10 @@ def main():
 
 
     lpips_fn = lpips.LPIPS(net='alex').to(device)
-
-    pixel_loss_fn = nn.L1Loss()
+    if args.use_MSE_loss:
+        pixel_loss_fn=nn.MSELoss()
+    else:
+        pixel_loss_fn = nn.L1Loss()
     contrastive_loss_fn=Contractiveloss().to(device) if args.use_contrastive_loss else None
     perceptual_loss_fn = PerceptualLoss().to(device) if args.use_perceptual_loss else None
     real_perceptual_loss_fn = RealContractiveloss().to(device) if args.use_noteasy_contrastive_loss else None
@@ -135,31 +147,8 @@ def main():
             if current_psnr > best_psnr:
                 best_psnr = current_psnr
                 checkpoint_data = {"state_dict": model.state_dict(), "optimizer": optimizer.state_dict()}
-                if args.use_noresize:
-                    if args.use_perceptual_loss and args.use_contrastive_loss:
-                        model_name=f"{args.model}_perceptual_contrastive_noresize.pth.tar"
-                    elif args.use_perceptual_loss:
-                        model_name = f"{args.model}_perceptual_noresize.pth.tar"
-                    elif args.use_contrastive_loss:
-                        model_name=f"{args.model}_contrastive_noresize.pth.tar"
-                    elif args.use_noteasy_contrastive_loss:
-                        model_name=f"{args.model}_real_contrastive_noresize.pth.tar"
-    
-                    else:
-                        model_name=f"{args.model}_noresize.pth.tar"
-                else:
-                    if args.use_perceptual_loss and args.use_contrastive_loss:
-                        model_name=f"{args.model}_perceptual_contrastive.pth.tar"
-                    elif args.use_perceptual_loss:
-                        model_name = f"{args.model}_perceptual.pth.tar"
-                    elif args.use_contrastive_loss:
-                        model_name=f"{args.model}_contrastive.pth.tar"
-                    elif args.use_noteasy_contrastive_loss:
-                        model_name=f"{args.model}_real_contrastive.pth.tar"
-
-                    else:
-                        model_name=f"{args.model}.pth.tar"
-                save_checkpoint(checkpoint_data, filename=f"best_{model_name}")
+                tag = build_ckpt_tag(args)
+                save_checkpoint(checkpoint_data, filename=f"best_{tag}.pth.tar")
 
             save_some_examples(model, test_loader, epoch, folder="evaluation_images", device=device)
 

@@ -95,6 +95,7 @@ class Mymodel(nn.Module):
         self.layer=PReNetLayer()
 
     def forward(self,x):
+        origin=x
         y=x
         #初始化h,c
         h0=torch.zeros(x.shape[0], 64,x.shape[2], x.shape[3], device=x.device)
@@ -105,4 +106,4 @@ class Mymodel(nn.Module):
             x,state=self.layer(x,y,state)
 
         
-        return x
+        return (origin-x)

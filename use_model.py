@@ -22,6 +22,11 @@ parser.add_argument("--use_noresize", action="store_true", help="Use noresize")
 args=parser.parse_args()
 
 
+
+def build_ckpt_tag(args):
+    tags = [args.checkpoint]
+    return "_".join(tags)
+
 if args.model=="unet":
     model=UNet()
 elif args.model=="derainnet":
@@ -32,7 +37,8 @@ elif args.model=="baseline":
     model=BaselineNet()
 
 data=args.data_dir
-checkpoint=args.checkpoint
+checkpoint=f"checkpoint/{args.checkpoint}.pth.tar"
+tags=build_ckpt_tag(args)
 device="cuda" if torch.cuda.is_available() else "cpu"
 optimizer = optim.Adam(model.parameters(), lr=1e-4)
 model=model.to(device).eval()
@@ -68,9 +74,6 @@ with torch.no_grad():
     img=model(img_in)
     final_img = img.squeeze(0).clamp(0, 1).cpu().detach()
     final_img = transforms.ToPILImage()(final_img)
-    if args.use_noresize:
-        final_img.save(f"output_{args.model}_noresize.jpg")
-    else:
-            final_img.save(f"output_{args.model}.jpg")
+    final_img.save(f"output_{tags}.jpg")
 
 

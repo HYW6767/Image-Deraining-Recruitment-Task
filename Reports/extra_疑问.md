@@ -36,4 +36,58 @@ python main.py --data_dir "data\Rain200L" --model derainnet --mode train --epoch
 
 还是不太理想，不过可以发现雨丝没那么明显了
 
-先这样吧
+试试用这个将 mymodel 训练 100 轮
+
+```powershell
+python main.py --data_dir "data\Rain200L" --model mymodel --mode train --epochs 100 --use_noresize 
+```
+
+裁剪至 256 显存撑不住啊，改成 128
+
+开始训练后电脑直接下雨了😨😨
+
+挂一晚上试试看
+
+怎么训一半显存又炸了
+
+加上 `--batch_size 2` 试试
+
+测试一下
+
+生成完成，虽然效果好了，但是仍有部分雨丝
+
+为了防止这张图后续被覆盖，我将其重命名为 `output_mymodel_noresize1.jpg`
+
+换个 loss 试试看
+
+```powershell
+python main.py --data_dir "data\Rain200L" --model mymodel --mode train --epochs 100 --use_noresize --use_noteasy_contrastive_loss
+```
+
+卧槽这个训的太慢了，训练 10 轮应该差不多了
+
+生成一下图片
+
+![](https://picgocloud.com/m/a7cfe7ce-8147-483f-893d-5c202410dea8.jpg)
+
+说实话，效果不尽人意，或许是底图太白了？
+
+换张图试试
+
+![](https://picgocloud.com/m/15a0b1a6-5555-475c-b650-e98037dccacf.jpg)
+
+也不太行啊
+
+相比原来模糊不少
+
+用之前的模型试试看
+
+好不少，但是距离能完全去雨还是有一段路啊
+
+先建一个 img 目录存一下刚刚生成的图（防覆盖）
+
+卧槽我才发现 dataset 里评估的 resize 我忘记注释了
+
+又更改了一下 dataset 的逻辑，并加入了可选 MSEloss 的选项
+
+现在 checkpoint 的命名太臃肿了，我让 ai 帮助我改一下，先把这版上传 GitHub
