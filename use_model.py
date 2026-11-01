@@ -37,7 +37,7 @@ elif args.model=="baseline":
     model=BaselineNet()
 
 data=args.data_dir
-checkpoint=f"checkpoint/{args.checkpoint}.pth.tar"
+checkpoint=f"checkpoints/{args.checkpoint}.pth.tar"
 tags=build_ckpt_tag(args)
 device="cuda" if torch.cuda.is_available() else "cpu"
 optimizer = optim.Adam(model.parameters(), lr=1e-4)

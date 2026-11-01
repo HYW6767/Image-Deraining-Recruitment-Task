@@ -65,7 +65,7 @@ class DerainDataset_noresize(Dataset):
         else:
             self.transform = transforms.Compose([
                 # transforms.Resize((image_size, image_size)),
-                transforms.CenterCrop((256,256)),
+                transforms.CenterCrop((196,196)),
                 transforms.ToTensor()
             ])
 
@@ -82,7 +82,7 @@ class DerainDataset_noresize(Dataset):
 
         if self.is_train:
             i, j, h, w = transforms.RandomCrop.get_params(
-                rainy_image, (256,256))
+                rainy_image, (196,196))
             rainy_image = TF.crop(rainy_image, i, j, h, w)
             clean_image = TF.crop(clean_image, i, j, h, w)
 

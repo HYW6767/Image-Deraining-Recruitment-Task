@@ -47,6 +47,7 @@ def build_ckpt_tag(args):
     if args.use_perceptual_loss:          tags.append("perceptual")
     if args.use_contrastive_loss:         tags.append("contrastive")
     if args.use_noteasy_contrastive_loss: tags.append("noteasy")
+    tags.append(f"epochs{args.epochs}")
     return "_".join(tags)
 
 def train_one_epoch(loader, model, optimizer, pixel_loss_fn, perceptual_loss_fn,contrastive_loss_fn,real_contrastive_loss_fn, args, device):
@@ -146,7 +147,7 @@ def main():
 
             if current_psnr > best_psnr:
                 best_psnr = current_psnr
-                checkpoint_data = {"state_dict": model.state_dict(), "optimizer": optimizer.state_dict()}
+                checkpoint_data = {"state_dict": model.state_dict(), "optimizer": optimizer.state_dict(),"epoch":args.epochs}
                 tag = build_ckpt_tag(args)
                 save_checkpoint(checkpoint_data, filename=f"best_{tag}.pth.tar")
 

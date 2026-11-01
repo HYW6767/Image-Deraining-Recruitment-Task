@@ -88,6 +88,16 @@ python main.py --data_dir "data\Rain200L" --model mymodel --mode train --epochs 
 
 卧槽我才发现 dataset 里评估的 resize 我忘记注释了
 
-又更改了一下 dataset 的逻辑，并加入了可选 MSEloss 的选项
+又更改了一下 dataset 的逻辑，由于 PReNet 的原论文使用了 MSE，于是加入了可选 MSEloss 的选项
 
 现在 checkpoint 的命名太臃肿了，我让 ai 帮助我改一下，先把这版上传 GitHub
+
+同时修改了输出图片的命名逻辑，现在没那么容易覆盖了
+
+增大了裁剪图片的尺寸至 256，同时缩小 batch_size 至 2（我的显存吃紧了）
+
+今天晚上再试试看，明早应该还有时间
+
+怎么越改越烂，我没招了
+
+目前唯一的实际进步是更改了命名逻辑😭😭😭
